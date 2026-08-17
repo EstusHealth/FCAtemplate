@@ -9,9 +9,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#171410">
 <title>Functional Capacity Assessment Builder</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- Fonts are served from this origin: no third-party request from a clinical
+     tool, and the typography survives with no network. index.html on its own
+     still runs, falling back to the system sans-serif. -->
+<link rel="stylesheet" href="fonts.css">
 <style>
 :root{
   --navy:#344982; --blue:#2f6f9e; --teal:#2ca5b8; --plum:#ab5c95;
@@ -3518,7 +3522,21 @@ window.addEventListener('DOMContentLoaded',()=>{
   window.addEventListener('resize',syncPreviewBtn);
   document.getElementById('noteText').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) addNote(); });
   update();
+  registerWorker();
 });
+
+/* ================================================================
+   OFFLINE
+   When the builder is hosted rather than opened from disk, the service
+   worker keeps it working with no reception — which is the condition an
+   FCA is often written in. Nothing about a draft is involved: drafts
+   live in this browser's local storage and are never transmitted.
+================================================================ */
+function registerWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  if(!/^https?:$/.test(location.protocol)) return;   /* opened from disk — nothing to do */
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,4 @@
+# The deployment is the app; documentation stays in the repository.
+README.md
+docs/
+.git

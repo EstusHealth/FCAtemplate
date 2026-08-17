@@ -7,9 +7,9 @@ itself: the pre-flight checklist you work through before the participant arrives
 sheet you take in on a clipboard, and the report builder that writes the assessment up — all from one
 dataset, so nothing is ever re-typed and no two documents can contradict each other.
 
-`index.html` is the whole application. Open it in a browser. There is no build step, no server, no
-install, and no network call: everything is held in the page and saved to that browser's local
-storage.
+`index.html` is the whole application. Open it in a browser, or deploy the repository to Vercel as a
+static site. There is no build step, no server, no framework, and no third-party request: everything
+is held in the page and saved to that browser's local storage.
 
 ---
 
@@ -86,6 +86,47 @@ than merely well formatted.
 Nothing leaves the browser. There is no telemetry, no upload, and no server — which is also why the
 draft lives in that browser until you save it to a file.
 
+## Hosting on Vercel
+
+The repository deploys as a static site with no build step.
+
+1. **Vercel → Add New → Project**, import `EstusHealth/FCAtemplate`.
+2. Framework Preset **Other**. Leave Build Command empty and Output Directory as the repository root.
+3. Deploy.
+
+Or from the command line: `npx vercel` (preview) and `npx vercel --prod`.
+
+`vercel.json` carries the production configuration:
+
+- **Content-Security-Policy** restricting the page to its own origin — `connect-src 'self'` means the
+  app cannot send participant data anywhere, whatever else happens. Worth knowing when the question
+  "where does the data go" is asked about a clinical tool: it does not go anywhere.
+- **`X-Robots-Tag: noindex, nofollow, noarchive`** plus `robots.txt` — a practice tool should not be
+  in search results.
+- `X-Frame-Options`, `Referrer-Policy: no-referrer`, `nosniff`, a locked-down `Permissions-Policy`.
+- Cache rules: HTML and the service worker revalidate on every load so a deploy lands immediately;
+  fonts and icons are immutable and cached for a year.
+- `.vercelignore` keeps the README and `docs/` out of the deployment — the deployed site is just the
+  app.
+
+**It works with no reception.** An FCA is written in a family's living room, and hosting a tool that
+needs the network would be a step backwards from a file on a laptop. `sw.js` caches the app shell on
+first load, so after that the builder opens and runs fully offline; `manifest.webmanifest` makes it
+installable, so it goes on an iPad home screen and opens without browser chrome. Fonts are served
+from this origin rather than from Google, which is what makes the typography survive offline — and
+means no third party sees a request when a clinician opens a participant's assessment.
+
+Two things worth knowing before you roll it out:
+
+- **Put the deployment behind Vercel's Deployment Protection** (Project → Settings → Deployment
+  Protection: password, or SSO on a Pro/Enterprise plan). Everything is client-side, so a public URL
+  leaks no participant data — but it also puts the practice's assessment methodology on the open web,
+  and gives anyone the ability to generate documents on your letterhead.
+- **Drafts are per browser, per origin, per device.** They are held in local storage, so a draft
+  started on the hosted app is not visible in a copy opened from disk, on another machine, or in a
+  private window — and clearing site data clears it. Use **Save draft** for anything you need to keep
+  or move, and treat that `.json` as clinical material: it contains everything you have typed.
+
 ## Extending it
 
 The data tables sit at the top of the script and are the only place most changes are needed:
@@ -102,6 +143,23 @@ The data tables sit at the top of the script and are the only place most changes
 Adding an assessment means adding one entry to `TOOLS`; adding a subdomain means adding one row to a
 `DOMAINS` entry. Both flow through to the form, the report, the AI pack and the validator without
 further change. A tool used once does not need code at all — use the generic tool builder in Stage 3.
+
+## Files
+
+```
+index.html              the application
+fonts.css  fonts/       self-hosted Oswald, Barlow, Barlow Semi Condensed (latin, latin-ext)
+sw.js                   offline support
+manifest.webmanifest    installable-app metadata
+icons/                  app and home-screen icons
+vercel.json             headers, caching, CSP
+robots.txt              noindex
+.vercelignore           keeps docs out of the deployment
+docs/traceability.md    every governance rule mapped to the clause it enforces
+```
+
+`index.html` copied on its own still runs — it falls back to the system sans-serif without the
+`fonts/` directory beside it, and skips the service worker when opened from disk.
 
 ## Provenance
 
